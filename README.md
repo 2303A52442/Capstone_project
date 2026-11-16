@@ -1,5 +1,12 @@
 # AI Career Twin
 
+## Live Demo
+
+- **Frontend:** [ai-career-twin-frontend.onrender.com](https://ai-career-twin-frontend.onrender.com)
+- **Backend API:** [ai-career-twin-backend-kis8.onrender.com](https://ai-career-twin-backend-kis8.onrender.com)
+- **API health check:** [backend health](https://ai-career-twin-backend-kis8.onrender.com/health)
+- **Interactive API docs:** [Swagger UI](https://ai-career-twin-backend-kis8.onrender.com/docs)
+
 AI Career Twin is a full-stack career intelligence platform that models a candidate as a dynamic skill profile rather than a static resume. The platform combines structured performance tracking, skill-gap analysis, recommendation generation, and a continuous feedback loop so a candidate can improve toward a target role with measurable outcomes.
 
 ## Problem Statement
