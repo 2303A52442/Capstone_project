@@ -1,15 +1,49 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_BASE = (
+  import.meta.env.VITE_API_URL
+  || (import.meta.env.DEV ? 'http://localhost:8000' : 'https://ai-career-twin-backend-kis8.onrender.com')
+).replace(/\/+$/, '');
+
+function formatApiError(detail, status) {
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (!item || typeof item !== 'object') return '';
+        const field = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : '';
+        return field && item.msg ? `${field}: ${item.msg}` : item.msg || '';
+      })
+      .filter(Boolean);
+    if (messages.length) return messages.join('. ');
+  }
+
+  if (typeof detail === 'string' && detail.trim()) return detail;
+  if (detail && typeof detail === 'object' && typeof detail.message === 'string') {
+    return detail.message;
+  }
+
+  return {
+    401: 'Invalid username or password.',
+    404: 'The requested resource was not found.',
+    422: 'Please check the form fields and try again.',
+    500: 'The server could not complete the request. Please try again later.',
+  }[status] || 'Request failed. Please try again.';
+}
 
 async function request(path, options = {}) {
   const token = localStorage.getItem('career_twin_token');
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers || {}),
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+    });
+  } catch {
+    throw new Error('Unable to reach the API. Please check your connection and try again.');
+  }
 
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
@@ -19,21 +53,26 @@ async function request(path, options = {}) {
         window.location.href = '/login';
       }
     }
-    throw new Error(detail.detail || 'Request failed');
+    throw new Error(formatApiError(detail.detail, response.status));
   }
   return response.json();
 }
 
 async function upload(path, file) {
   const token = localStorage.getItem('career_twin_token');
-  const response = await fetch(`${API_BASE}${path}`, {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body: file,
-  });
+  let response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: file,
+    });
+  } catch {
+    throw new Error('Unable to reach the API. Please check your connection and try again.');
+  }
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
-    throw new Error(detail.detail || 'Upload failed');
+    throw new Error(formatApiError(detail.detail, response.status));
   }
   return response.json();
 }

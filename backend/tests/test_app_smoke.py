@@ -43,6 +43,38 @@ def test_cors_preserves_localhost_origin():
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
 
 
+def test_registration_rejects_invalid_fields_without_weakening_validation():
+    response = client.post(
+        "/auth/register",
+        json={
+            "email": "not-an-email",
+            "username": "x",
+            "full_name": "A",
+            "password": "short",
+        },
+        headers={"Origin": "https://ai-career-twin-frontend.onrender.com"},
+    )
+
+    assert response.status_code == 422
+    assert len(response.json()["detail"]) == 4
+    assert response.headers["access-control-allow-origin"] == (
+        "https://ai-career-twin-frontend.onrender.com"
+    )
+
+
+def test_login_errors_include_cors_headers():
+    response = client.post(
+        "/auth/login-json",
+        json={"username": "missing_user", "password": "wrong-password"},
+        headers={"Origin": "https://ai-career-twin-frontend.onrender.com"},
+    )
+
+    assert response.status_code == 401
+    assert response.headers["access-control-allow-origin"] == (
+        "https://ai-career-twin-frontend.onrender.com"
+    )
+
+
 def test_recommendation_prioritizes_role_importance_and_evidence():
     recommendation = generate_recommendation(
         candidate_skill_metrics=[

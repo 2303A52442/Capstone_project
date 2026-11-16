@@ -237,7 +237,7 @@ function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      const result = await login(event.currentTarget.username.value, event.currentTarget.password.value);
+      const result = await login(event.currentTarget.username.value.trim(), event.currentTarget.password.value);
       localStorage.setItem('career_twin_token', result.access_token);
       window.location.href = '/';
     } catch (requestError) {
@@ -285,9 +285,9 @@ function RegisterPage() {
     const form = event.currentTarget;
     try {
       await register({
-        full_name: form.full_name.value,
-        email: form.email.value,
-        username: form.username.value,
+        full_name: form.full_name.value.trim(),
+        email: form.email.value.trim(),
+        username: form.username.value.trim(),
         password: form.password.value,
       });
       window.location.href = '/login';
@@ -306,7 +306,7 @@ function RegisterPage() {
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Full Name</label>
-            <input name="full_name" type="text" placeholder="Full name" required />
+            <input name="full_name" type="text" placeholder="Full name" minLength="2" maxLength="200" required />
           </div>
           <div className="form-group">
             <label>Email</label>
@@ -314,11 +314,11 @@ function RegisterPage() {
           </div>
           <div className="form-group">
             <label>Username</label>
-            <input name="username" type="text" placeholder="Username" required />
+            <input name="username" type="text" placeholder="Username" minLength="3" maxLength="50" required />
           </div>
           <div className="form-group">
             <label>Password</label>
-            <input name="password" type="password" placeholder="Password" required />
+            <input name="password" type="password" placeholder="Password" minLength="6" required />
           </div>
           <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
             {loading ? 'Registering...' : 'Register'}
