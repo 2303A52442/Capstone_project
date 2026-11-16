@@ -42,11 +42,13 @@ async function request(path, options = {}) {
       },
     });
   } catch {
+    console.error('API request could not be completed', { path, status: 'network' });
     throw new Error('Unable to reach the API. Please check your connection and try again.');
   }
 
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
+    console.error('API request failed', { path, status: response.status });
     if (response.status === 401) {
       localStorage.removeItem('career_twin_token');
       if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
@@ -68,10 +70,12 @@ async function upload(path, file) {
       body: file,
     });
   } catch {
+    console.error('API upload could not be completed', { path, status: 'network' });
     throw new Error('Unable to reach the API. Please check your connection and try again.');
   }
   if (!response.ok) {
     const detail = await response.json().catch(() => ({}));
+    console.error('API upload failed', { path, status: response.status });
     throw new Error(formatApiError(detail.detail, response.status));
   }
   return response.json();

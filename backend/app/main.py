@@ -40,8 +40,8 @@ app.include_router(comparison.router, prefix="/comparison", tags=["comparison"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(evidence.router, prefix="/evidence", tags=["evidence"])
 
-if settings.database_url.startswith("sqlite"):
-    Base.metadata.create_all(bind=engine)
+# Create missing tables on deployment without altering or deleting existing data.
+Base.metadata.create_all(bind=engine)
 
 @app.get("/health")
 def health_check():
