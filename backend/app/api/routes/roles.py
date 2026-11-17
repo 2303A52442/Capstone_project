@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.routes.profile import get_current_user
 from app.db.session import get_db
 from app.models.candidate_profile import CandidateProfile
+from app.models.role_owner import RoleOwner
 from app.models.skill import CandidateTargetRole, RoleSkill, Skill, TargetRole
 from app.models.user import User
 
@@ -69,6 +70,7 @@ def create_role(
     )
     db.add(role)
     db.flush()
+    db.add(RoleOwner(role_id=role.id, user_id=current_user.id))
     for requirement in payload.get("skills", []):
         skill = _get_or_create_skill(db, requirement)
         db.add(RoleSkill(
@@ -97,6 +99,12 @@ def add_role_skill(
     role = db.query(TargetRole).filter(TargetRole.id == role_id).first()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found")
+    owner = db.query(RoleOwner).filter(
+        RoleOwner.role_id == role.id,
+        RoleOwner.user_id == current_user.id,
+    ).first()
+    if not owner:
+        raise HTTPException(status_code=403, detail="Only the custom role owner can change its requirements")
     skill = _get_or_create_skill(db, payload)
     existing = db.query(RoleSkill).filter(
         RoleSkill.role_id == role.id,
