@@ -1,3 +1,5 @@
+import math
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -25,6 +27,16 @@ def _get_or_create_skill(db: Session, payload: dict) -> Skill:
         db.add(skill)
         db.flush()
     return skill
+
+
+def _require_rating(payload: dict, key: str, default: float, minimum: float, maximum: float) -> float:
+    try:
+        value = float(payload.get(key, default))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=422, detail=f"{key} must be a number")
+    if not math.isfinite(value) or value < minimum or value > maximum:
+        raise HTTPException(status_code=422, detail=f"{key} must be between {minimum} and {maximum}")
+    return value
 
 
 @router.get("")
@@ -62,8 +74,8 @@ def create_role(
         db.add(RoleSkill(
             role_id=role.id,
             skill_id=skill.id,
-            required_level=float(requirement.get("required_level", 3.0)),
-            importance=float(requirement.get("importance", 3.0)),
+            required_level=_require_rating(requirement, "required_level", 3.0, 0.0, 5.0),
+            importance=_require_rating(requirement, "importance", 3.0, 1.0, 5.0),
         ))
     db.commit()
     db.refresh(role)
@@ -91,14 +103,14 @@ def add_role_skill(
         RoleSkill.skill_id == skill.id,
     ).first()
     if existing:
-        existing.required_level = float(payload.get("required_level", existing.required_level))
-        existing.importance = float(payload.get("importance", existing.importance))
+        existing.required_level = _require_rating(payload, "required_level", existing.required_level, 0.0, 5.0)
+        existing.importance = _require_rating(payload, "importance", existing.importance, 1.0, 5.0)
     else:
         db.add(RoleSkill(
             role_id=role.id,
             skill_id=skill.id,
-            required_level=float(payload.get("required_level", 3.0)),
-            importance=float(payload.get("importance", 3.0)),
+            required_level=_require_rating(payload, "required_level", 3.0, 0.0, 5.0),
+            importance=_require_rating(payload, "importance", 3.0, 1.0, 5.0),
         ))
     db.commit()
     return {"status": "added", "role_id": role.id, "skill_id": skill.id}
