@@ -4,6 +4,7 @@ import { BarChart, Bar, CartesianGrid, ResponsiveContainer, XAxis, YAxis, Toolti
 import {
   acceptRecommendation,
   completeRecommendation,
+  createRole,
   getCandidateSkills,
   getCareerTwin,
   getDashboard,
@@ -16,6 +17,7 @@ import {
   getSkills,
   generateRecommendation,
   addPerformance,
+  addRoleSkill,
   login,
   register,
   recordOutcome,
@@ -338,6 +340,7 @@ function ProfilePage() {
   const [profile, setProfile] = useState({ name: '', career_goal: '', education: '', degree: '', specialization: '', graduation_year: '', bio: '' });
   const [roles, setRoles] = useState([]);
   const [selectedRole, setSelectedRole] = useState('');
+  const [customRole, setCustomRole] = useState({ name: '', domain: '', description: '', skills: '' });
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -363,6 +366,19 @@ function ProfilePage() {
     if (!selectedRole) return;
     await selectRole(selectedRole);
     setMessage('Target role selected. Career Twin synchronized.');
+  }
+
+  async function saveCustomRole(event) {
+    event.preventDefault();
+    const skills = customRole.skills.split('\n').map((line) => {
+      const [name, category = 'Custom', requiredLevel = '3', importance = '3'] = line.split('|').map((value) => value.trim());
+      return { name, category, required_level: Number(requiredLevel), importance: Number(importance) };
+    }).filter((skill) => skill.name);
+    const role = await createRole({ ...customRole, skills });
+    setRoles((currentRoles) => [...currentRoles, role]);
+    setSelectedRole(String(role.id));
+    setCustomRole({ name: '', domain: '', description: '', skills: '' });
+    setMessage('Custom role created. It is now available in role selection, comparison, and simulation.');
   }
 
   return (
@@ -416,6 +432,30 @@ function ProfilePage() {
           <button type="button" className="btn btn-primary" onClick={saveRole}>Confirm Target Role</button>
         </div>
       </div>
+
+      <form className="panel" onSubmit={saveCustomRole}>
+        <h3>Add a Custom Role</h3>
+        <p className="caption">Add one skill requirement per line using: Skill | Category | Required level (0-5) | Importance (1-5)</p>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Role Name</label>
+            <input value={customRole.name} onChange={(event) => setCustomRole({ ...customRole, name: event.target.value })} placeholder="e.g. Cloud Engineer" minLength="2" required />
+          </div>
+          <div className="form-group">
+            <label>Domain</label>
+            <input value={customRole.domain} onChange={(event) => setCustomRole({ ...customRole, domain: event.target.value })} placeholder="e.g. Cloud" required />
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Description</label>
+          <input value={customRole.description} onChange={(event) => setCustomRole({ ...customRole, description: event.target.value })} placeholder="Describe this career path" />
+        </div>
+        <div className="form-group">
+          <label>Required Skills</label>
+          <textarea value={customRole.skills} onChange={(event) => setCustomRole({ ...customRole, skills: event.target.value })} placeholder={'Kubernetes | DevOps | 4 | 5\nAWS | Cloud | 3.5 | 4'} rows={3} required />
+        </div>
+        <button type="submit" className="btn btn-secondary">Add Custom Role</button>
+      </form>
 
       {message && <div className="alert alert-success">{message}</div>}
     </div>
@@ -917,6 +957,8 @@ function SimulationPage() {
   const [skillId, setSkillId] = useState('');
   const [level, setLevel] = useState(4.0);
   const [result, setResult] = useState(null);
+  const [manualSkill, setManualSkill] = useState({ name: '', category: '', required_level: 3, importance: 3 });
+  const [manualMessage, setManualMessage] = useState('');
 
   useEffect(() => {
     getRoles().then(setRoles).catch(() => setRoles([]));
@@ -937,6 +979,18 @@ function SimulationPage() {
     event.preventDefault();
     const data = await simulateSkills({ role_id: Number(roleId), overrides: { [skillId]: Number(level) } });
     setResult(data);
+  }
+
+  async function addManualSkill(event) {
+    event.preventDefault();
+    await addRoleSkill(roleId, {
+      ...manualSkill,
+      required_level: Number(manualSkill.required_level),
+      importance: Number(manualSkill.importance),
+    });
+    setManualMessage('Skill added to this role. It is now available for simulation.');
+    await loadRole(roleId);
+    setManualSkill({ name: '', category: '', required_level: 3, importance: 3 });
   }
 
   return (
@@ -967,6 +1021,33 @@ function SimulationPage() {
         </div>
         <button type="submit" className="btn btn-primary">Run What-If Simulation</button>
       </form>
+
+      {roleId && (
+        <form className="panel" onSubmit={addManualSkill}>
+          <h3>Add a Skill to This Role</h3>
+          <p className="caption">Type a skill that is not listed, define its requirement, then use it in the simulation.</p>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Skill Name</label>
+              <input value={manualSkill.name} onChange={(event) => setManualSkill({ ...manualSkill, name: event.target.value })} placeholder="e.g. Kubernetes" required />
+            </div>
+            <div className="form-group">
+              <label>Category</label>
+              <input value={manualSkill.category} onChange={(event) => setManualSkill({ ...manualSkill, category: event.target.value })} placeholder="e.g. DevOps" required />
+            </div>
+            <div className="form-group">
+              <label>Required Level</label>
+              <input type="number" min="0" max="5" step="0.1" value={manualSkill.required_level} onChange={(event) => setManualSkill({ ...manualSkill, required_level: event.target.value })} required />
+            </div>
+            <div className="form-group">
+              <label>Importance</label>
+              <input type="number" min="1" max="5" step="1" value={manualSkill.importance} onChange={(event) => setManualSkill({ ...manualSkill, importance: event.target.value })} required />
+            </div>
+          </div>
+          <button type="submit" className="btn btn-secondary">Add Skill to Role</button>
+          {manualMessage && <div className="alert alert-success">{manualMessage}</div>}
+        </form>
+      )}
 
       {result && (
         <div className="panel">

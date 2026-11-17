@@ -137,6 +137,20 @@ export function getRoles() {
   return request('/roles');
 }
 
+export function createRole(payload) {
+  return request('/roles', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export function addRoleSkill(roleId, payload) {
+  return request(`/roles/${roleId}/skills`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getSelectedRole() {
   return request('/roles/current/selected');
 }
