@@ -4,7 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import auth, comparison, dashboard, evidence, profile, recommendations, skills, roles, performance, career_twin
 from app.core.config import settings
 from app.db.base import Base
-from app.db.session import engine
+from app.db.catalog import ensure_catalog
+from app.db.session import SessionLocal, engine
 from app.models import evidence as candidate_evidence, projects
 
 app = FastAPI(
@@ -42,6 +43,8 @@ app.include_router(evidence.router, prefix="/evidence", tags=["evidence"])
 
 # Create missing tables on deployment without altering or deleting existing data.
 Base.metadata.create_all(bind=engine)
+with SessionLocal() as db:
+    ensure_catalog(db)
 
 @app.get("/health")
 def health_check():
