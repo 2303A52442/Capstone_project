@@ -153,6 +153,13 @@ export function getSkills() {
   return request('/skills');
 }
 
+export function createSkill(payload) {
+  return request('/skills', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
 export function getCandidateSkills() {
   return request('/skills/candidate');
 }

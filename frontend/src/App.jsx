@@ -22,6 +22,7 @@ import {
   selectRole,
   compareRoles,
   confirmEvidence,
+  createSkill,
   analyzeGithub,
   analyzeResume,
   getEvidence,
@@ -425,6 +426,7 @@ function SkillsPage() {
   const [skills, setSkills] = useState([]);
   const [candidateSkills, setCandidateSkills] = useState([]);
   const [form, setForm] = useState({ skill_id: '', current_level: 2.5, confidence: 0.8, evidence: '' });
+  const [newSkill, setNewSkill] = useState({ name: '', category: '', description: '' });
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -444,6 +446,21 @@ function SkillsPage() {
     });
     setCandidateSkills(await getCandidateSkills());
     setMessage('Skill level updated and Career Twin synchronized.');
+  }
+
+  async function addSkill(event) {
+    event.preventDefault();
+    const skill = await createSkill({
+      name: newSkill.name.trim(),
+      category: newSkill.category.trim(),
+      description: newSkill.description.trim() || null,
+    });
+    setSkills((currentSkills) => (
+      currentSkills.some((item) => item.id === skill.id) ? currentSkills : [...currentSkills, skill]
+    ));
+    setForm((currentForm) => ({ ...currentForm, skill_id: String(skill.id) }));
+    setNewSkill({ name: '', category: '', description: '' });
+    setMessage(`${skill.name} added. You can now record its proficiency and evidence.`);
   }
 
   return (
@@ -475,6 +492,26 @@ function SkillsPage() {
           <textarea value={form.evidence} onChange={(event) => setForm({ ...form, evidence: event.target.value })} placeholder="Describe projects, coursework, or work experience supporting this proficiency level" rows={2} />
         </div>
         <button type="submit" className="btn btn-primary">Save Skill Evidence</button>
+      </form>
+
+      <form className="panel" onSubmit={addSkill}>
+        <h3>Add Another Skill</h3>
+        <p className="caption">Add any skill that is not in the standard catalog. Custom skills appear in your portfolio, but do not change a role's benchmark requirements.</p>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>Skill Name</label>
+            <input value={newSkill.name} onChange={(event) => setNewSkill({ ...newSkill, name: event.target.value })} placeholder="e.g. Kubernetes" minLength="2" required />
+          </div>
+          <div className="form-group">
+            <label>Category</label>
+            <input value={newSkill.category} onChange={(event) => setNewSkill({ ...newSkill, category: event.target.value })} placeholder="e.g. DevOps" minLength="2" required />
+          </div>
+        </div>
+        <div className="form-group">
+          <label>Description (optional)</label>
+          <input value={newSkill.description} onChange={(event) => setNewSkill({ ...newSkill, description: event.target.value })} placeholder="What does this skill represent?" />
+        </div>
+        <button type="submit" className="btn btn-secondary">Add Skill</button>
       </form>
 
       <div className="panel">
